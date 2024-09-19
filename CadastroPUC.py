@@ -1,7 +1,7 @@
 import json
 
 ################# funções #################
-def menu_principal():
+def menu_principal() -> str:
     print("----- MENU PRINCIPAL -----")
     print("(1) Estudantes")
     print("(2) Professores")
@@ -12,7 +12,7 @@ def menu_principal():
 
     return input("Informe a opção desejada: ")
 
-def menu_operacoes():
+def menu_operacoes() -> str:
     print("(1) Incluir")
     print("(2) Listar")
     print("(3) Atualizar")
@@ -20,6 +20,26 @@ def menu_operacoes():
     print("(9) Voltar ao menu principal\n")
 
     return input("Informe a ação desejada: ")
+
+def gerenciamento_operacoes(escolha: str, arquivo: str, campo_id: str, campo_int: list = [], campo_str: list = []) -> None:
+    while True:
+        print(f"\n***** [{escolha}] MENU DE OPERAÇÕES *****")
+        action = menu_operacoes()
+
+        print()
+        if action == '1': # Incluir
+            incluir(arquivo, campo_id, campo_int, campo_str)
+        elif action == '2': # Listar
+            listar(arquivo)
+        elif action == '3': # Atualizar
+            editar(arquivo, campo_id, campo_int, campo_str)
+        elif action == '4': # Excluir
+            excluir(arquivo)
+        elif action == '9':
+            print("===== Voltando ao menu principal =====\n")
+            break
+        else:
+            print("\nOpção inválida\n")
 
 
 ################# leitura e escrita em arquivos #################
@@ -37,102 +57,49 @@ def ler_arquivo(arquivo: str) -> list:
         return data
     except:
         return data
-    
-################# checagem de mesmo id #################
+
+
+################# checagem #################
 def same_id(lista: list, id: int) -> bool:
     for objeto in lista:
         if objeto.get("codigo") == id:
             return True
     return False
-same_id([], 'a')
 
+def verifica_inteiro(campo: str) -> int:
+    while True: # loop para verificar erro no input
+        try:
+            id = int(input(f"{campo}: "))
+            return id
+        except ValueError:
+            print("INSIRA UM NÚMERO!")
+    
 
 ################# inclusão das informações #################
-def incluir_pessoa(arquivo: str) -> None:
+def incluir(arquivo: str, campo_id: str, campo_int: list = [], campo_str: list = []) -> None:
     print("===== Inclusão =====")
     lista = ler_arquivo(arquivo)
-    while True: # loop para verificar erro no input
-        try:
-            id = int(input("Codigo: "))
-            if same_id(lista, id):
-                print("CÓDIGO JÁ CADASTRADO!")
-                print("INSIRA OUTRO CÓDIGO!")
-                continue
-            break
-        except ValueError:
-            print("INSIRA UM NÚMERO!")
-        
 
-    nome = input("Nome: ")
-    cpf = input("CPF: ")
+    while True:
+        id = verifica_inteiro(campo_id)
+        if same_id(lista, id):
+            print("CÓDIGO JÁ CADASTRADO!")
+            print("INSIRA OUTRO CÓDIGO!")
+            continue
+        else: break
 
-    lista.append({"codigo": id,
-                  "nome": nome,
-                  "cpf": cpf}) 
-    
+    novos_dados = {campo_id:id}
+
+    for campo in campo_int:
+        novos_dados[campo] = verifica_inteiro(campo)
+
+    for campo in campo_str:
+        novos_dados[campo] = input(f"{campo}: ")
+
+    lista.append(novos_dados)
+
     escrever_arquivo(lista, arquivo)
 
-
-def incluir_disciplina(arquivo: str) -> None:
-    print("===== Inclusão =====")
-    lista = ler_arquivo(arquivo)
-    while True: # loop para verificar erro no input
-        try:
-            id = int(input("Codigo: "))
-            if same_id(lista, id):
-                print("CÓDIGO JÁ CADASTRADO!")
-                print("INSIRA OUTRO CÓDIGO!")
-                continue
-            break
-        except ValueError:
-            print("INSIRA UM NÚMERO!")
-        
-    nome = input("Disciplina: ")
-
-    lista.append({"codigo": id,
-                  "disciplina": nome}) 
-    
-    escrever_arquivo(lista, arquivo)
-
-def incluir_turma(arquivo: str) -> None:
-    print("===== Inclusão =====")
-    lista = ler_arquivo(arquivo)
-    while True: # loop para verificar erro no input
-        try:
-            turma_id = int(input("Codigo: "))
-            if same_id(lista, turma_id):
-                print("CÓDIGO JÁ CADASTRADO!")
-                print("INSIRA OUTRO CÓDIGO!")
-                continue
-            prof_id = int(input("Codigo professor: "))
-            disci_id = int(input("Codigo disciplina: "))
-            break
-        except ValueError:
-            print("INSIRA UM NÚMERO!")
-
-
-    lista.append({"codigo": turma_id,
-                  "professor": prof_id,
-                  "disciplina": disci_id}) 
-    
-    escrever_arquivo(lista, arquivo)
-
-def incluir_matricula(arquivo: str) -> None:
-    print("===== Inclusão =====")
-    lista = ler_arquivo(arquivo)
-    while True: # loop para verificar erro no input
-        try:
-            turma_id = int(input("Codigo da turma: "))
-            aluno_id = int(input("Codigo do aluno: "))
-            break
-        except ValueError:
-            print("INSIRA UM NÚMERO!")
-
-
-    lista.append({"codigo": turma_id,
-                  "aluno": aluno_id}) 
-    
-    escrever_arquivo(lista, arquivo)
 
 ################# listagem #################
 def listar(arquivo: str) -> None:
@@ -146,30 +113,26 @@ def listar(arquivo: str) -> None:
 
 
 ################# edição #################
-def editar_pessoa(arquivo: str) -> None:
+def editar(arquivo:str, campo_id:str, campo_int: list = [], campo_str: list = []) -> None:
     print("===== Atualização =====")
     lista = ler_arquivo(arquivo)
-    while True: # loop para verificar erro no input
-        try:
-            id_antigo = int(input("Insira o codigo que deseja alterar: "))
-            break
-        except ValueError:
-            print("INSIRA UM NÚMERO!")
+
+    id_antigo = verifica_inteiro(campo_id)
+
     objeto_atualizar = None
     for objeto in lista:
-        if objeto.get("codigo") == id_antigo:
+        if objeto.get(campo_id) == id_antigo:
             objeto_atualizar = objeto
             break
+
     if objeto_atualizar:
         print("\nInsira os dados novos\n")
-        while True: # loop para verificar erro no input
-            try:
-                objeto_atualizar["codigo"] = int(input("Código: "))
-                break
-            except ValueError:
-                print("INSIRA UM NÚMERO!")
-        objeto_atualizar["nome"] = input("Nome: ")
-        objeto_atualizar["cpf"] = input("CPF: ")
+        objeto_atualizar[campo_id] = verifica_inteiro(campo_id)
+        for campo in campo_int:
+            objeto_atualizar[campo] = verifica_inteiro(campo)
+        for campo in campo_str:
+            objeto_atualizar[campo] = input(f"{campo}: ")
+
     else:
         print("Pessoa não encontrada")
     
@@ -180,7 +143,7 @@ def excluir(arquivo: str) -> None:
     print("===== Exclusão =====")
     while True: # loop para verificar erro no input
         try:
-            id_excluir = int(input("Insira o codigo do estudante: "))
+            id_excluir = int(input("Insira o codigo: "))
             break
         except ValueError:
             print("INSIRA UM NÚMERO!")
@@ -206,119 +169,21 @@ ARQUIVO_TURMA = "turmas.json"
 ARQUIVO_MATRICULA = "matriculas.json"
 
 
-################# loop menu principal #################
+################# loop menu principal #################   
 while True:
    
     option = menu_principal()
 
-    # verifica se a opção é válida
-    if option == '1' or option == '2' or option == '3' or option == '4' or option == '5':
-
-        ################# loop menu de operações #################
-        while True:
-            if option == '1':
-                print("\n***** [ESTUDANTES] MENU DE OPERAÇÕES *****")
-                
-                action = menu_operacoes()
-
-                print()
-                if action == '1': # Incluir
-                    incluir_pessoa(ARQUIVO_ALUNO)
-                elif action == '2': # Listar
-                    listar(ARQUIVO_ALUNO)
-                elif action == '3': # Atualizar
-                    editar_pessoa(ARQUIVO_ALUNO)
-                elif action == '4': # Excluir
-                    excluir(ARQUIVO_ALUNO)
-                elif action == '9':
-                    print("===== Voltando ao menu principal =====\n")
-                    break
-                else:
-                    print("\nOpção inválida\n")
-
-
-            elif option == '2': # Professores
-                print("***** [PROFESSORES] MENU DE OPERAÇÕES *****")
-
-                action = menu_operacoes()
-
-                print()
-                if action == '1': # Incluir
-                    incluir_pessoa(ARQUIVO_PROFESSOR)
-                elif action == '2': # Listar
-                    listar(ARQUIVO_PROFESSOR)
-                elif action == '3': # Atualizar
-                    editar_pessoa(ARQUIVO_PROFESSOR)
-                elif action == '4': # Excluir
-                    excluir(ARQUIVO_PROFESSOR)
-                elif action == '9':
-                    print("===== Voltando ao menu principal =====\n")
-                    break
-                else:
-                    print("\nOpção inválida\n")
-                
-
-            elif option == '3': # Disciplinas
-                print("***** [DISCIPLINAS] MENU DE OPERAÇÕES *****")
-
-                action = menu_operacoes()
-
-                print()
-                if action == '1': # Incluir
-                    incluir_disciplina(ARQUIVO_DISCIPLINA)
-                elif action == '2': # Listar
-                    listar(ARQUIVO_DISCIPLINA)
-                elif action == '3': # Atualizar
-                    editar_pessoa(ARQUIVO_DISCIPLINA)
-                elif action == '4': # Excluir
-                    excluir(ARQUIVO_DISCIPLINA)
-                elif action == '9':
-                    print("===== Voltando ao menu principal =====\n")
-                    break
-                else:
-                    print("\nOpção inválida\n")
-                
-            elif option == '4': # Turmas
-                print("***** [TURMAS] MENU DE OPERAÇÕES *****")
-
-                action = menu_operacoes()
-
-                print()
-                if action == '1': # Incluir
-                    incluir_turma(ARQUIVO_TURMA)
-                elif action == '2': # Listar
-                    listar(ARQUIVO_TURMA)
-                elif action == '3': # Atualizar
-                    editar_pessoa(ARQUIVO_TURMA)
-                elif action == '4': # Excluir
-                    excluir(ARQUIVO_TURMA)
-                elif action == '9':
-                    print("===== Voltando ao menu principal =====\n")
-                    break
-                else:
-                    print("\nOpção inválida\n")
-                
-            elif option == '5': # Matrículas
-                print("***** [MATRÍCULAS] MENU DE OPERAÇÕES *****")
-
-                action = menu_operacoes()
-
-                print()
-                if action == '1': # Incluir
-                    incluir_matricula(ARQUIVO_MATRICULA)
-                elif action == '2': # Listar
-                    listar(ARQUIVO_MATRICULA)
-                elif action == '3': # Atualizar
-                    editar_pessoa(ARQUIVO_MATRICULA)
-                elif action == '4': # Excluir
-                    excluir(ARQUIVO_MATRICULA)
-                elif action == '9':
-                    print("===== Voltando ao menu principal =====\n")
-                    break
-                else:
-                    print("\nOpção inválida\n")
-
-
+    if option == '1':
+        gerenciamento_operacoes("ESTUDANTES", ARQUIVO_ALUNO, "codigo", [], "nome", "cpf")
+    elif option == '2':
+        gerenciamento_operacoes("PROFESSORES", ARQUIVO_PROFESSOR, "codigo", [], "nome", "cpf")
+    elif option == '3':
+        gerenciamento_operacoes("DISCIPLINAS", ARQUIVO_DISCIPLINA, "codigo", [], "disciplina")
+    elif option == '4':
+        gerenciamento_operacoes("TURMAS", ARQUIVO_TURMA, "codigo", ["professor", "disciplina"])
+    elif option == '5':
+        gerenciamento_operacoes("MATRICULAS", ARQUIVO_MATRICULA, "codigo", ["aluno"])
     elif option == '9':
         print("Finalizando aplicação...")
         break
