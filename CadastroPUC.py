@@ -36,23 +36,23 @@ def gerenciamento_operacoes(escolha: str, arquivo: str, campo_id: str = "", camp
 
         print()
         if action == '1': # Incluir
-            if escolha == "MATRICULAS":
+            if arquivo == ARQUIVO_MATRICULA:
                 incluir_relacao(arquivo, ARQUIVO_TURMA, ARQUIVO_ALUNO, "turma", "aluno")
-            elif escolha == "TURMAS":
+            elif arquivo == ARQUIVO_TURMA:
                 incluir_relacao(arquivo, ARQUIVO_DISCIPLINA, ARQUIVO_PROFESSOR, "disciplina", "professor")
             else:
                 incluir(arquivo, campo_id, campo_int, campo_str)
         elif action == '2': # Listar
             listar(arquivo)
         elif action == '3': # Atualizar
-            if escolha == "MATRICULAS":
+            if arquivo == ARQUIVO_MATRICULA:
                 editar_relacao(arquivo, ARQUIVO_TURMA, ARQUIVO_ALUNO, "turma", "aluno")
-            elif escolha == "TURMAS":
+            elif arquivo == ARQUIVO_TURMA:
                 editar_relacao(arquivo, ARQUIVO_DISCIPLINA, ARQUIVO_PROFESSOR, "disciplina", "professor")
             else:
                 editar(arquivo, campo_id, campo_int, campo_str)
         elif action == '4': # Excluir
-            if escolha == "MATRICULAS":
+            if arquivo == ARQUIVO_MATRICULA:
                 excluir_matricula(arquivo)
             else: excluir(arquivo)
         elif action == '9':
@@ -94,32 +94,22 @@ def verifica_inteiro(campo: str) -> int:
         except ValueError:
             print("INSIRA UM NÚMERO!")
 
-def verificar_relacao(lista_relacao: list, id1: int, id2: int, key1, key2) -> bool:
+def verificar_relacao(lista_relacao: list, id1: int, id2: int, key1: str, key2: str) -> bool:
     for relacao in lista_relacao:
         if id2 == relacao.get(key2) and id1 == relacao.get(key1):
             return True
     return False
 
 
-# [x]: mudar a função excluir() e generalizar AAAAAAAA (acabou virando outra função: excluir_relacao())
-# [x]: mudar a função editar() para incluir matricula (virou outra função também: editar_relacao())
-# [x]: generalizar a função incluir_matricula() (só adicionar a turma nele)
-# [x]: generalizar a função varificar_matricula() (também adicionar a turma nele)
-# TODO: adicionar turma na função editar_relacao()
-# TODO: dar uma olhada na função gerenciamento_operacoes() pra ver se tem algo pra mudar lá
-# TODO: tentar achar um jeito de generalizar tudo
-
 ################# inclusão #################
 def incluir(arquivo: str, campo_id: str, campo_int: list = [], campo_str: list = []) -> None:
     print("===== Inclusão =====")
     lista = ler_arquivo(arquivo)
 
-    while True:
-        id = verifica_inteiro(campo_id)
-        if same_id(lista, id):
-            print("CÓDIGO JÁ CADASTRADO!")
-            print("INSIRA OUTRO CÓDIGO!")
-        else: break
+    id = verifica_inteiro(campo_id)
+    if same_id(lista, id):
+        print("CÓDIGO JÁ CADASTRADO!")
+        return
 
     novos_dados = {campo_id:id}
 
@@ -133,7 +123,7 @@ def incluir(arquivo: str, campo_id: str, campo_int: list = [], campo_str: list =
 
     escrever_arquivo(lista, arquivo)
 
-def incluir_relacao(arquivo_relacao: str, arquivo1, arquivo2, key1, key2) -> None:
+def incluir_relacao(arquivo_relacao: str, arquivo1: str, arquivo2: str, key1: str, key2: str) -> None:
     print("===== Inclusão =====")
     lista_relacao = ler_arquivo(arquivo_relacao)
     lista1 = ler_arquivo(arquivo1)
@@ -141,13 +131,11 @@ def incluir_relacao(arquivo_relacao: str, arquivo1, arquivo2, key1, key2) -> Non
     relacao = {}
 
     if arquivo_relacao == ARQUIVO_TURMA:
-        while True:
-            relacao_id = verifica_inteiro("codigo")
-            if same_id(lista_relacao, relacao_id):
-                print(f"!!!Turma já existe!!!")
-            else: 
-                relacao["codigo"] = relacao_id
-                break
+        relacao_id = verifica_inteiro("codigo")
+        if same_id(lista_relacao, relacao_id):
+            print(f"!!!Turma já existe!!!")
+            return
+        relacao["codigo"] = relacao_id
 
     id1 = verifica_inteiro(f"Codigo da {key1}")
     if not same_id(lista1, id1):
@@ -159,7 +147,12 @@ def incluir_relacao(arquivo_relacao: str, arquivo1, arquivo2, key1, key2) -> Non
         print(f"{key2} não existe")
         return
     
-    if not verificar_relacao(lista_relacao, id1, id2, key1, key2):
+    if arquivo_relacao == ARQUIVO_TURMA:
+        relacao[key1] = id1
+        relacao[key2] = id2
+        lista_relacao.append(relacao)
+        escrever_arquivo(lista_relacao, arquivo_relacao)
+    elif not verificar_relacao(lista_relacao, id1, id2, key1, key2):
         relacao[key1] = id1
         relacao[key2] = id2
         lista_relacao.append(relacao)
@@ -183,6 +176,9 @@ def listar(arquivo: str) -> None:
 def editar(arquivo:str, campo_id:str, campo_int: list = [], campo_str: list = []) -> None:
     print("===== Atualização =====")
     lista = ler_arquivo(arquivo)
+    if not lista:
+        print("!!Sem cadastros!!")
+        return
 
     id_antigo = verifica_inteiro(campo_id)
 
@@ -194,12 +190,12 @@ def editar(arquivo:str, campo_id:str, campo_int: list = [], campo_str: list = []
 
     if objeto_atualizar:
         print("\nInsira os dados novos\n")
-        while True:
-            id_novo = verifica_inteiro(campo_id)
-            if id_novo != id_antigo and same_id(lista, id_novo):
-                print("!!!CÓDIGO JÁ CADASTRADO!!!")
-                continue
-            break
+
+        id_novo = verifica_inteiro(campo_id)
+        if id_novo != id_antigo and same_id(lista, id_novo):
+            print("!!!CÓDIGO JÁ CADASTRADO!!!")
+            return
+
         objeto_atualizar[campo_id] = id_novo
         for campo in campo_int:
             objeto_atualizar[campo] = verifica_inteiro(campo)
@@ -210,44 +206,67 @@ def editar(arquivo:str, campo_id:str, campo_int: list = [], campo_str: list = []
     
     escrever_arquivo(lista, arquivo)
 
-def editar_relacao(arquivo_relacao: str, arquivo1, arquivo2, key1, key2) -> None:
-    print("===== Inclusão =====")
+def editar_relacao(arquivo_relacao: str, arquivo1: str, arquivo2: str, key1: str, key2: str) -> None:
+    print("===== Atualização =====")
     lista_relacao = ler_arquivo(arquivo_relacao)
     if not lista_relacao:
-        print("Sem cadastros")
+        print("!!Sem cadastros!!")
         return
+
     lista1 = ler_arquivo(arquivo1)
     lista2 = ler_arquivo(arquivo2)
+    objeto_atualizar = {}
+    relacao_nova = {}
 
-    id1_antigo = verifica_inteiro(f"Código da {key1}")
-    id2_antigo = verifica_inteiro(f"Código do {key2}")
+    if arquivo_relacao == ARQUIVO_TURMA:
+        relacao_id = verifica_inteiro("Código")
+        for objeto in lista_relacao:
+            if objeto.get("codigo") == relacao_id:
+                objeto_atualizar = objeto
+    else:
+        id1_antigo = verifica_inteiro(f"Código da {key1}")
+        id2_antigo = verifica_inteiro(f"Código do {key2}")
 
-    objeto_atualizar = None
-    for objeto in lista_relacao:
-        if objeto.get(key1) == id1_antigo and objeto.get(key2) == id2_antigo:
-            objeto_atualizar = objeto
-    
+        for objeto in lista_relacao:
+            if objeto.get(key1) == id1_antigo and objeto.get(key2) == id2_antigo:
+                objeto_atualizar = objeto
+
     if objeto_atualizar:
         print("Insira os dados novos")
+        if arquivo_relacao == ARQUIVO_TURMA:
+            id_novo = verifica_inteiro("Código")
+            if same_id(lista_relacao, id_novo) and id_novo != relacao_id:
+                print(f"!!!Código já cadastrado!!!")
+                return
+            relacao_nova["codigo"] = id_novo
+
         id1_novo = verifica_inteiro(f"Codigo da {key1}")
-        if not same_id(lista1, id1_novo) and id1_novo != id1_antigo:
+        if not same_id(lista1, id1_novo) and id1_novo != objeto_atualizar.get(key1):
             print(f"{key1} não existe")
             return
-        
+
         id2_novo = verifica_inteiro(f"Codigo do {key2}")
-        if not same_id(lista2, id2_novo) and id2_novo != id2_antigo:
+        if not same_id(lista2, id2_novo) and id2_novo != objeto_atualizar.get(key2):
             print(f"{key2} não existe")
             return
         
-        relacao_nova = {key1:id1_novo, key2:id2_novo}
-        if (relacao_nova != objeto_atualizar and not verificar_relacao(lista_relacao, id1_novo, id2_novo, key1, key2)) or relacao_nova == objeto_atualizar:
-            objeto_atualizar[key1] = id1_novo
-            objeto_atualizar[key2] = id2_novo
+        relacao_nova[key1] = id1_novo
+        relacao_nova[key2] = id2_novo
+        
+        if arquivo_relacao == ARQUIVO_TURMA:
+            for campo in objeto_atualizar:
+                objeto_atualizar[campo] = relacao_nova[campo]
             escrever_arquivo(lista_relacao, arquivo_relacao)
+
+        elif (relacao_nova != objeto_atualizar and not verificar_relacao(lista_relacao, id1_novo, id2_novo, key1, key2)) or relacao_nova == objeto_atualizar:
+            for campo in objeto_atualizar:
+                objeto_atualizar[campo] = relacao_nova[campo]
+            escrever_arquivo(lista_relacao, arquivo_relacao)
+
         else:
             print(f"\n!!{key2.upper()} JÁ CADASTRADO NA {key1.upper()}!!")
     else:
-        print("Não existe")
+        print("CADASTRO NÃO ENCONTRADO")
 
 ################# exclusão #################
 def excluir(arquivo: str, key: str = "codigo") -> None:
